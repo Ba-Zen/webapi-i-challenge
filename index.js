@@ -1,22 +1,15 @@
 // implement your API here
 const express = require("express");
 
-const users = require("./data/db.js");
+const db = require("./data/db.js");
 
 const server = express();
 
 server.use(express.json()); // make POST and PUT work
 
-const sendUserError = (status, message, res) => {
-    // This is just a helper method that we'll use for sending errors when things go wrong.
-    res.status(status).json({ errorMessage: message });
-    return;
-  };
-
-// the R in CRUD
+// Get - Return all users in db
 server.get("/api/users", (req, res) => {
-  users
-    .find()
+  db.find()
     .then(users => {
       res.status(200).json(users);
     })
@@ -26,61 +19,68 @@ server.get("/api/users", (req, res) => {
         .json({ error: "The users information could not be retrieved." });
     });
 });
-// Read by ID - unfinished
-server.get('/api/users/:id', (req, res) => {
-    users.findById().then(user => {
-        res.status(200).json(user);
+// Get users by id - return specific user in db
+server.get("api/users/:id", (req, res) => {
+  const { id } = req.params;
+  db.findById(id)
+    .then(user => {
+      res.status(200).json(user);
     })
-})
-
-// the C in CRUD
-server.post('/api/users', (req, res) => {
-    const { name, bio, created_at, updated_at } = req.body;
-    if (!name || !bio) {
-      sendUserError(400, 'Must provide name and bio', res);
-      return;
-    }
-    db  
-      .insert({
-        name,
-        bio,
-        created_at,
-        updated_at
-      })
-      .then(response => {
-        res.status(201).json(response);
-      })
-      .catch(error => {
-        console.log(error);
-        sendUserError(400, error, res);
-        return;
-      });
-  });
-
-// the D in CRUD
-server.delete('/api/users/:id', (req, res) => {
-    const id = req.params.id;
-
-    db.users.remove(id).then(deleted => {
-        res.status(204).end();
-    }).catch(error => {
-        res.status(500).json({ error: "The user could not be removed" });
+    .catch(err => {
+      res
+        .status(404)
+        .json({ message: "The user with the specified ID does not exist." });
     });
 });
 
-// the U in CRUD 
-server.put('/api/users/:id', (req, res) => {
-    const { id } = req.params;
-    const changes = req.body;
 
-    db.users.update(id, changes).then(updated => {
-        if (updated) {
-            res.status(200).json(updated);
-        } else {
-            res.status(404).json({ message: "The user with the specified ID does not exist." })
-        }
-    }).catch(error => {
-        res.status(400).json({ errorMessage: "Please provide name and bio for the user." });
+// POST - Create a user 
+server.post("/api/users", (req, res) => {
+  const newUser = req.body;
+  db.insert(newUser)
+    .then(user => {
+      res.status(201).json(user);
+    })
+    .catch(err => {
+      console.log(err);
+      res.status(500).json({ message: "error creating user" });
+    });
+});
+
+// DELETE - the D in CRUD
+server.delete("/api/users/:id", (req, res) => {
+  const { id } = req.params;
+
+  db
+    .remove(id)
+    .then(deleted => {
+      res.status(204).end(); 
+    })
+    .catch(error => {
+      res.status(500).json({ error: "The user could not be removed" });
+    });
+});
+
+// PUT - the U in CRUD
+server.put("/api/users/:id", (req, res) => {
+  const { id } = req.params;
+  const changes = req.body;
+
+  db
+    .update(id, changes)
+    .then(updated => {
+      if (updated) {
+        res.status(200).json(updated);
+      } else {
+        res
+          .status(404)
+          .json({ message: "The user with the specified ID does not exist." });
+      }
+    })
+    .catch(error => {
+      res
+        .status(400)
+        .json({ errorMessage: "Please provide name and bio for the user." });
     });
 });
 
