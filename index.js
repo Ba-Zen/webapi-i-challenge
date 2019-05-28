@@ -40,7 +40,7 @@ server.post('/api/users', (req, res) => {
       sendUserError(400, 'Must provide name and bio', res);
       return;
     }
-    db
+    db  
       .insert({
         name,
         bio,
